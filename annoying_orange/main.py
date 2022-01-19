@@ -1,72 +1,89 @@
 import cv2, dlib, sys
 import numpy as np
+from imutils import face_utils, resize
 
 scalar = 0.3
 
-cap = cv2.VideoCapture('woman.mp4')
-overlay = cv2.imread('apple.png', cv2.IMREAD_UNCHANGED)
+cap = cv2.VideoCapture('face.mp4')
+orange_img = cv2.imread('orange.png')
+orange_img = cv2.resize(orange_img, dsize=(400, 400))
 detector =dlib.get_frontal_face_detector()
 predictor = dlib.shape_predictor('shape_predictor_68_face_landmarks.dat')
 
-# overlay function
-def overlay_transparent(background_img, img_to_overlay_t, x, y, overlay_size=None):
-    bg_img = background_img.copy()
-  # convert 3 channels to 4 channels
-    if bg_img.shape[2] == 3:
-        bg_img = cv2.cvtColor(bg_img, cv2.COLOR_BGR2BGRA)
- 
-    if overlay_size is not None:
-        img_to_overlay_t = cv2.resize(img_to_overlay_t.copy(), overlay_size)
-
-    b, g, r, a = cv2.split(img_to_overlay_t)
-
-    mask = cv2.medianBlur(a, 5)
-    h, w, _ = img_to_overlay_t.shape
-    roi = bg_img[int(y-h/2):int(y+h/2), int(x-w/2):int(x+w/2)]
-    img1_bg = cv2.bitwise_and(roi.copy(), roi.copy(), mask=cv2.bitwise_not(mask))
-    img2_fg = cv2.bitwise_and(img_to_overlay_t, img_to_overlay_t, mask=mask)
-
-    bg_img[int(y-h/2):int(y+h/2), int(x-w/2):int(x+w/2)] = cv2.add(img1_bg, img2_fg)
-
-  # convert 4 channels to 4 channels
-    bg_img = cv2.cvtColor(bg_img, cv2.COLOR_BGRA2BGR)
-
-    return bg_img
-
-while True:
+while cap.isOpened():
     ret, img = cap.read()
+    
     if not ret:
         break
-    
-    img = cv2.resize(img, (int(img.shape[1]*0.15), int(img.shape[0]*0.15)))
-    ori = img.copy()
+        
+    img = cv2.resize(img, (0,0), fx=0.5, fy=0.5)
     faces = detector(img)
+    result = orange_img.copy()
     if len(faces) == 0:
         continue
     face = faces[0]
-    dlib_shape = predictor(img, face)
-    shape_2d = np.array([[p.x, p.y] for p in dlib_shape.parts()])
+
+    x1, y1, x2, y2 = face.left(), face.top(), face.right(), face.bottom()
+    face_img = img[y1:y2, x1:x2].copy()
+
+    shape = predictor(img, face)
+    shape = face_utils.shape_to_np(shape)
     
-    top_left = np.min(shape_2d, axis=0)
-    bottom_right = np.max(shape_2d, axis=0)
+    for p in shape:
+        cv2.circle(face_img, center = (p[0] - x1, p[1] - y1), radius=2, color = 255, thickness=1)
+
+    # eyes
+    le_x1 = shape[36,0]
+    le_y1 = shape[37,1]
+    le_x2 = shape[39,0]
+    le_y2 = shape[41,1]
+    le_margin = int((le_x2 - le_x1) * 0.18)
     
+    re_x1 = shape[42, 0]
+    re_y1 = shape[43, 1]
+    re_x2 = shape[45, 0]
+    re_y2 = shape[47, 1]
+    re_margin = int((re_x2 - re_x1) * 0.18)
     
-    face_size = int(max(bottom_right - top_left)*1.6)
-                    
-    center_x, center_y = np.mean(shape_2d, axis = 0).astype(np.int)
-    result = overlay_transparent(ori, overlay, center_x-10, center_y-50, overlay_size=(face_size, face_size))
-                    
-    img = cv2.rectangle(img, pt1=(face.left(), face.top()), pt2=(face.right(), face.bottom()), color=(255, 255, 255))
+    left_eye_img = img[le_y1-le_margin:le_y2+le_margin, le_x1-le_margin:le_x2+le_margin].copy()
+    right_eye_img = img[re_y1-re_margin:re_y2+re_margin, re_x1-re_margin:re_x2+re_margin].copy()
     
-    for s in shape_2d:
-        cv2.circle(img, center=tuple(s), radius=1, color=(255, 255, 255), thickness=2, lineType = cv2.LINE_AA) 
-    cv2.circle(img, center=tuple(top_left), radius=1, color=(255, 255, 255), thickness=2, lineType = cv2.LINE_AA)
-    cv2.circle(img, center=tuple(bottom_right), radius=1, color=(255, 255, 255), thickness=2, lineType = cv2.LINE_AA)
-    cv2.circle(img, center=tuple((center_x, center_y)), radius=1, color=(255, 255, 255), thickness=2, lineType = cv2.LINE_AA)
-    cv2.imshow('img', img)
+    left_eye_img = resize(left_eye_img, width=100)
+    right_eye_img = resize(right_eye_img, width=100)
+    
+    result = cv2.seamlessClone(
+        left_eye_img,
+        result,
+        np.full(left_eye_img.shape[:2], 255, left_eye_img.dtype),
+        (120, 150),
+        cv2.MIXED_CLONE
+    )
+    result = cv2.seamlessClone(
+        right_eye_img,
+        result,
+        np.full(right_eye_img.shape[:2], 255, right_eye_img.dtype),
+        (280, 150),
+        cv2.MIXED_CLONE
+    )
+    mouth_x1 = shape[48, 0]
+    mouth_y1 = shape[50, 1]
+    mouth_x2 = shape[54, 0]
+    mouth_y2 = shape[57, 1]
+    mouth_margin = int((mouth_x2 - mouth_x1) * 0.1)
+    
+    mouth_img = img[mouth_y1-mouth_margin:mouth_y2+mouth_margin, mouth_x1-mouth_margin:mouth_x2+mouth_margin].copy()
+    mouth_img = resize(mouth_img, width=250)
+    
+    result = cv2.seamlessClone(
+        mouth_img,
+        result,
+        np.full(mouth_img.shape[:2], 255, mouth_img.dtype),
+        (200, 280),
+        cv2.MIXED_CLONE
+    )
+    cv2.imshow('face', face_img)
     cv2.imshow('result', result)
     cv2.waitKey(1)
-    
 cv2.destroyAllWindows()
     
     
