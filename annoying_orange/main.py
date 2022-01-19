@@ -2,8 +2,6 @@ import cv2, dlib, sys
 import numpy as np
 from imutils import face_utils, resize
 
-scalar = 0.3
-
 cap = cv2.VideoCapture('face.mp4')
 orange_img = cv2.imread('orange.png')
 orange_img = cv2.resize(orange_img, dsize=(400, 400))
@@ -15,8 +13,7 @@ while cap.isOpened():
     
     if not ret:
         break
-        
-    img = cv2.resize(img, (0,0), fx=0.5, fy=0.5)
+    img = cv2.resize(img, (0,0), fx=0.3, fy=0.3)
     faces = detector(img)
     result = orange_img.copy()
     if len(faces) == 0:
@@ -81,7 +78,6 @@ while cap.isOpened():
         (200, 280),
         cv2.MIXED_CLONE
     )
-    cv2.imshow('face', face_img)
     cv2.imshow('result', result)
     cv2.waitKey(1)
 cv2.destroyAllWindows()
