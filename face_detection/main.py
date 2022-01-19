@@ -21,7 +21,6 @@ def overlay_transparent(background_img, img_to_overlay_t, x, y, overlay_size=Non
     b, g, r, a = cv2.split(img_to_overlay_t)
 
     mask = cv2.medianBlur(a, 5)
-    print(bg_img.shape)
     h, w, _ = img_to_overlay_t.shape
     roi = bg_img[int(y-h/2):int(y+h/2), int(x-w/2):int(x+w/2)]
     img1_bg = cv2.bitwise_and(roi.copy(), roi.copy(), mask=cv2.bitwise_not(mask))
@@ -36,7 +35,6 @@ def overlay_transparent(background_img, img_to_overlay_t, x, y, overlay_size=Non
 
 while True:
     ret, img = cap.read()
-    print('a')
     if not ret:
         break
     
