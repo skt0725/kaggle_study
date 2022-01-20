@@ -67,7 +67,8 @@ while cap.isOpened():
                 fy_img = img[y1:y2, x1:x2].copy()
                 fy_img = cv2.resize(fy_img, dsize=None, fx=0.05, fy=0.05, interpolation=cv2.INTER_NEAREST)
                 fy_img = cv2.resize(fy_img, dsize=(x2 - x1, y2 - y1), interpolation=cv2.INTER_NEAREST)
-
+#blur with box filter
+#                 fy_img = cv2.boxFilter(fy_img, -1, (15,15))
                 img[y1:y2, x1:x2] = fy_img
                 
             cv2.putText(img, text=gesture[idx].upper(), org=(int(res.landmark[0].x * img.shape[1]),
