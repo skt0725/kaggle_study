@@ -13,6 +13,7 @@ while cap.isOpened():
     
     if not ret:
         break
+        
     img = cv2.resize(img, (0,0), fx=0.3, fy=0.3)
     faces = detector(img)
     result = orange_img.copy()
@@ -78,6 +79,7 @@ while cap.isOpened():
         (200, 280),
         cv2.MIXED_CLONE
     )
+    cv2.imshow('face', face_img)
     cv2.imshow('result', result)
     cv2.waitKey(1)
 cv2.destroyAllWindows()
