@@ -14,7 +14,7 @@ while cap.isOpened():
     if not ret:
         break
         
-    img = cv2.resize(img, (0,0), fx=0.3, fy=0.3)
+    img = cv2.resize(img, (0,0), fx=0.3, fy=0.28)
     faces = detector(img)
     result = orange_img.copy()
     if len(faces) == 0:
